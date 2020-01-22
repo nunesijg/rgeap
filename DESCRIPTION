@@ -1,0 +1,42 @@
+Package: rgeap
+Type: Package
+Title: Gene Expression Analysis Platform (GEAP)
+Version: 0.3.0
+Author: Nunes IJG, Feltes BC
+Maintainer: Itamar JG Nunes <nunesijg@gmail.com>
+Description: The current package is used simultaneously along GEAP executable run-time.
+License: file
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.0.2
+LinkingTo: Rcpp
+Collate: 
+    'RcppExports.R'
+    'vardefs.R'
+    'rgeap-package.R'
+    'base.R'
+    'c-diffexpresults.R'
+    'c-microarrayinfo.R'
+    'c-multifactor.R'
+    'c-serialist.R'
+    'f-affy.R'
+    'f-fileio.R'
+    'f-agilent.R'
+    'f-strformat.R'
+    'f-assertions.R'
+    'f-bioconductor.R'
+    'f-diffexpr.R'
+    'f-matrixdata.R'
+    'f-esets.R'
+    'f-geomats.R'
+    'f-go.R'
+    'f-graphics.R'
+    'f-illumina.R'
+    'f-lang.R'
+    'f-limma.R'
+    'f-probes.R'
+    'f-qualitymetrics.R'
+    'f-results.R'
+    'f-serial.R'
+Imports: Rcpp
+Suggests: matrixStats
