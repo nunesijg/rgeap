@@ -197,14 +197,14 @@ write.matrix <- function(filename, obj)
     m = obj$E
   }
   incrownms = !is.null(rownames(m)) && !('row.names' %in% colnames(m)) && !(all.equal(rownames(m), as.character(1:nrow(m))) == T)
-  (con = .open.filecon(filename)) %using% {
+  (con = .write.filecon(filename, 'at')) %using% {
     colnms = colnames(m)
     if (incrownms)
     {
       colnms = c('row.names', colnms)
     }
     writeLines(paste0(colnms, collapse = '\t'), con = con)
-    write.table(m, file = filename, append = T, quote = F, sep='\t', row.names = incrownms, col.names = F )
+    write.table(m, file = con, quote = F, sep='\t', row.names = incrownms, col.names = F )
   }
   invisible(0)
 }
