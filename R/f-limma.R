@@ -50,7 +50,10 @@ treat.limma <- function(ergls, bg.method = 'auto', bg.normexp.method = 'saddle',
                  vsn = limma::normalizeVSN(lsres),
                  limma::normalizeBetweenArrays(lsres, method=norm.method, cyclic.method = norm.cyclic.method)
                  )
-  if (!wasmat) lsres = limma::avereps(lsres, ID=lsres$genes[,1])
+  if (!wasmat)
+  {
+    lsres = limma::avereps(lsres, ID=lsres$genes[,1])
+  }
   if (inherits(lsres, 'EList'))
   {
     validSel = !apply(lsres$E, 1, anyNA)

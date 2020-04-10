@@ -204,7 +204,7 @@ write.matrix <- function(filename, obj)
       colnms = c('row.names', colnms)
     }
     writeLines(paste0(colnms, collapse = '\t'), con = con)
-    write.table(m, file = con, quote = F, sep='\t', row.names = incrownms, col.names = F )
+    write.table(m, file = con, quote = F, sep='\t', row.names = incrownms, col.names = F)
   }
   invisible(0)
 }

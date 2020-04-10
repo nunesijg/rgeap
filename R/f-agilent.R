@@ -92,9 +92,13 @@ read.agilent <- function(filenames, method='median', green.only=F)
   basenms = make.names(sub('\\.[^\\.]*?$', '', basename(filenames)), T)
   datals = lapply(colsvals, function(i) matrix(NA_real_, nrow = nrow(genedt), ncol = length(basenms),
                                                dimnames = list(1:nrow(genedt), basenms ) ))
-  for (i in 1:length(filenames))
+  filecount = length(filenames)
+  for (i in 1:filecount)
   {
     fagil = filenames[i]
+    .give.status(percent= as.integer(100 * (i - 1) / filecount),
+                 message=sprintf("Lendo %s (%d de %d)", basename(fagil), i, filecount),
+                 engMsg=sprintf("Reading %s (%d of %d)", basename(fagil), i, filecount))
     dtvals = read.columns(fagil, colsvals, skip=skip, quote = '')
     for (nmslot in names(colsvals))
     {

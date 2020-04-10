@@ -165,6 +165,20 @@ filter.args.bytype <- function(types, ...)
   invisible(0)
 }
 
+#' Sends a status message to the main console
+#' @export
+status.message <- function(msg)
+{
+  .give.status(message=msg)
+}
+
+#' Sends a percentage update to the main console
+#' @export
+status.percent <- function(perc)
+{
+  .give.status(percent = as.integer(perc))
+}
+
 # Emits a error
 .give.error <- function(message = "Error!"){
   writeLines(paste0(tag.error, message))
