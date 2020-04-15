@@ -184,9 +184,9 @@ esets.merge <- function(...)
 }
 
 # Removes NA entries from ExpressionSet
-# [[geapexport assign ESetRemoveInvalidValues(call eset, bool rmNA=true, bool rmZero=true, bool rmNegative=true)]]
+# [[geapexport assign ESetRemoveInvalidValues(call eset, bool rmNA=true, bool rmZero=true, bool rmNegative=true, bool rmInfinite=true)]]
 #' @export
-eset.rm.invalid.values <- function(eset, rm.na=T, rm.zero=T, rm.neg=T)
+eset.rm.invalid.values <- function(eset, rm.na=T, rm.zero=T, rm.neg=T, rm.inf=T)
 {
   .initialize.esets()
   m = eset
@@ -198,6 +198,7 @@ eset.rm.invalid.values <- function(eset, rm.na=T, rm.zero=T, rm.neg=T)
   rminds = apply(m, 1, anyNA)
   if (rm.zero) rminds = rminds | apply(m, 1, function(v) any(v == 0, na.rm = T))
   if (rm.neg) rminds = rminds | apply(m, 1, function(v) any(v < 0, na.rm = T))
+  if (rm.inf) rminds = rminds | apply(m, 1, function(v) any(is.infinite(v)))
   if (!any(rminds)) return(eset)
   m = m[!rminds,,drop=F]
   if (iseset)
