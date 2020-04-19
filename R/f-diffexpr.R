@@ -1,6 +1,7 @@
 
 #' @include base.R
 #' @include c-diffexpresults.R
+#' @include f-esets.R
 
 ##########################
 # Differential Expression
@@ -24,20 +25,22 @@
 #' @seealso \linkS4class{DifExpResults}
 NULL
 
-# [[geapexport assign DiffExprCompare(call seriesData, string[] expGroup, string[] ctrlGroup, bool doLog2=false, string adjMethod="BH" ) ]]
+# [[geapexport assign DiffExprCompare(call seriesData, string[] expGroup, string[] ctrlGroup, string ebayesMethod, dots optargs ) ]]
 #' @rdname diffexpr
 #' 
 #' @param seriesData a \code{matrix} or \code{data.frame} or \code{ExpressionSet}
 #' @param expGroup a character vector for experimental group. Elements must be contained in column names from \code{seriesData}
 #' @param ctrlGroup a character vector for control group. Elements must be contained in column names from \code{seriesData}
-#' @param doLog2 a logical whether to \eqn{log_2}{log2} the values
-#' @param adjMethod a character parameter to adjust p.values. See \code{\link[stats]{p.adjust}.methods}
+#' @param ebayesMethod a character parameter for Empirical Bayes method. Valid options are 'ebayes' and 'treat'
+#' @param do.log2 a logical whether to \eqn{log_2}{log2} the values
+#' @param adjust.method a character parameter to adjust p-values. See \code{\link[stats]{p.adjust}.methods}
 #' 
 #' @return a \code{\linkS4class{DifExpResults}} object is returned, containing data to be processed by GEAP
 #' @export
-diffexpr.compare <- function(seriesData, expGroup, ctrlGroup, doLog2 = F, adjMethod = 'BH')
+diffexpr.compare <- function(seriesData, expGroup, ctrlGroup, ebayesMethod = 'ebayes', ...)
 {
   .initialize.diffexpr()
+  ebayesMethod = match.arg(tolower(ebayesMethod), c('ebayes', 'treat'))
   compMatrix = NULL
   if (is.data.frame(seriesData))
   {
@@ -55,8 +58,30 @@ diffexpr.compare <- function(seriesData, expGroup, ctrlGroup, doLog2 = F, adjMet
   {
     stop("Data must consist of numeric values")
   }
+  if (is.factor(expGroup)) expGroup = as.character(expGroup)
+  if (is.numeric(expGroup)) expGroup = colnames(compMatrix)[expGroup]
+  if (is.factor(ctrlGroup)) ctrlGroup = as.character(ctrlGroup)
+  if (is.numeric(ctrlGroup)) ctrlGroup = colnames(compMatrix)[ctrlGroup]
+  
+  doLog2 = ...arg(do.log2, F)
+  
+  if (ebayesMethod == 'ebayes')
+  {
+    adjMethod = ...arg(adjust.method, 'BH')
+    ebayesCall = substitute(eBayes(groupContrast))
+    tableCall = substitute(topTable(difExpData,coef=1, number=1000000, p.value = 1, sort.by = "none", adjust.method = adjMethod))
+  }
+  else
+  {
+    adjMethod = 'TREAT'
+    lfc = ...arg(lfc, log2(1.2))
+    ebayesCall = substitute(treat(groupContrast, lfc=lfc))
+    tableCall = substitute(topTreat(difExpData,coef=1, number=1000000, p.value = 1, sort.by = "none"))
+  }
+  
   groupcols = unique(c(expGroup, ctrlGroup))
   compMatrix = compMatrix[,groupcols]
+  compMatrix = eset.rm.invalid.values(compMatrix) # Removes the invalid values, since they will return errors
   if (doLog2) compMatrix = log2(compMatrix)
   rowCount = nrow(compMatrix)
   plotDisplayVals = data.frame(ID = rownames(compMatrix), exp = NA_real_[1:rowCount], ctrl = NA_real_[1:rowCount],
@@ -83,10 +108,10 @@ diffexpr.compare <- function(seriesData, expGroup, ctrlGroup, doLog2 = F, adjMet
     # Groups contrasts model
     groupContrast = contrasts.fit(groupReplicates, contrastMatrix)
     # Gets the differentially expressed genes
-    difExpData=eBayes(groupContrast)
+    difExpData = eval(ebayesCall)
     # Gets the data.frame of results
-    results<-topTable(difExpData,coef=1,number=1000000, p.value = 1, sort.by = "none", adjust.method = adjMethod)
-    results<-cbind(ID = rownames(results), results)
+    results = eval(tableCall)
+    results = cbind(ID = rownames(results), results)
     if (doLog2)
     {
       plotDisplayVals$exp = 2^(groupReplicates$coefficients[,"g2"])
@@ -108,13 +133,8 @@ diffexpr.compare <- function(seriesData, expGroup, ctrlGroup, doLog2 = F, adjMet
       results[i, "AveExpr"] = (compMatrix[i, 1] + compMatrix[i, 2])/2
     }
   }
-  #if (adjMethod == 'none' && 'adj.P.Val' %in% names(results))
-  #  results = results[, !names(results) %in% c('adj.P.Val')]
   resultList = new('DifExpResults', resultsData=results, plotData=plotDisplayVals,
                    expGroup=expGroup, ctrlGroup=ctrlGroup, adjMethod=adjMethod )
-  #resultList[["displayvalues"]] = plotDisplayVals # Slots: exp, ctrl, logFC, nlogpval
-  #resultList[["results"]] = results # Matriz de resultados que conhecemos
-  #resultList[["difexpressas"]] <- difExpressas # Deprecated
   return(resultList)
 }
 
