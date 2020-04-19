@@ -132,7 +132,7 @@
     smpnames = colnames(x$M)
     outdf = data.frame(row.names=smpnames)
     outimgfiles = character(0)
-    svgMode = !is.windows() || getOption('force.svg', F)
+    svgMode = !is.windows() || getOption('force.svg', T)
     ext = if (svgMode) ".svg" else ".wmf"
     for(i in 1:length(m))
     {
