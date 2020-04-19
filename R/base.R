@@ -288,3 +288,12 @@ garbage.collect <- function(full=T)
   invisible(0)
 }
 
+# Gets an argument by its name inside the dots of a parent funtion. If a default value is provided, this is used if the argument is missing
+...arg <- function(name, default)
+{
+  argnm = trimws(deparse(substitute(name)), whitespace = '[\'\"\t\n]')
+  argls = eval.parent(substitute(match.call(expand.dots = FALSE)$`...`))
+  nodef = missing(default)
+  ret = if (argnm %in% names(argls)) argls[[argnm]] else if (!nodef) default else stop(sprintf("object '%s' not found", argnm), call. = F)
+  ret
+}
