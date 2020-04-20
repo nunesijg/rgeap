@@ -144,11 +144,11 @@
       h = module@size['h'] * dpi / 75
       w = module@size['w'] * dpi / 75
       suppressWarnings(expr = {
-        if (is.windows() && !getOption('force.svg', F))
+        if (svgMode)
         {
-          win.metafile(filename = outimgf, height = h, width = w, family = "sans")
-        } else {
           svg(filename = outimgf, height = h, width = w, family = "sans")
+        } else {
+          win.metafile(filename = outimgf, height = h, width = w, family = "sans")
         }
         aqmenv$makePlot(module)
       })
