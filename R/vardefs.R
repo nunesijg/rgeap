@@ -28,7 +28,7 @@ options(tag.error = "!E!",
         tag.output="!0!")
 
 # "Always SVG" (no WMF) option for some of the graphics rendering
-options(force.svg = FALSE)
+options(force.svg = TRUE)
 
 # Local command storage (GEAP-only use)
 .command.buffer = raw(4096L)

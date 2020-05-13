@@ -132,7 +132,7 @@
     smpnames = colnames(x$M)
     outdf = data.frame(row.names=smpnames)
     outimgfiles = character(0)
-    svgMode = !is.windows() || getOption('force.svg', F)
+    svgMode = !is.windows() || getOption('force.svg', T)
     ext = if (svgMode) ".svg" else ".wmf"
     for(i in 1:length(m))
     {
@@ -144,11 +144,11 @@
       h = module@size['h'] * dpi / 75
       w = module@size['w'] * dpi / 75
       suppressWarnings(expr = {
-        if (is.windows() && !getOption('force.svg', F))
+        if (svgMode)
         {
-          win.metafile(filename = outimgf, height = h, width = w, family = "sans")
-        } else {
           svg(filename = outimgf, height = h, width = w, family = "sans")
+        } else {
+          win.metafile(filename = outimgf, height = h, width = w, family = "sans")
         }
         aqmenv$makePlot(module)
       })

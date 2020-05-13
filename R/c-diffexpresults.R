@@ -50,6 +50,7 @@ setMethod('initialize', 'DifExpResults',
             return(.Object)
           })
 
+# SHOW
 setMethod('show', 'DifExpResults',
           function(object)
           {
@@ -57,6 +58,8 @@ setMethod('show', 'DifExpResults',
             cat(paste(sprintf('Columns: (%d)', ncol(resultsData(object)) ))); cat('\n')
             cat(paste(sprintf('Rows: (%d)', nrow(resultsData(object))) )); cat('\n')
           })
+
+# S4 Methods
 
 # [[geapgeneric void DifExpResultsData(call resObjName)]]
 #' @export
@@ -96,4 +99,6 @@ setMethod('top.table', 'DifExpResults', function(x, ...)
             resdt
           })
 
+# S3 Methods
 
+head.DifExpResults <- function(x, n = 6L, ...) head(resultsData(x), n=n, ...)
