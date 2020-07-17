@@ -17,7 +17,7 @@
 }
 
 # Reads multiple files, returns a EListRaw (single channel) or RGList (dual channel)
-# [[geapexec assign ReadGenePixGPR(string[] filenames, string method, bool singleChannel = true) ]]
+# [[geapexec assign ReadGenePixGPR(path[] filenames, string method, bool singleChannel = true) ]]
 #' @export
 read.genepix <- function(filenames, method='mean', green.only=F)
 {
@@ -35,12 +35,45 @@ read.genepix <- function(filenames, method='mean', green.only=F)
                  engMsg=sprintf("Reading %s (%d of %d)", basename(fnm), i, filecount))
     gprhead = limma::readGPRHeader(fnm)
     gprcols = NULL
-    regms = .regex.matches("(\\d+)[^\t]*\t(\\d+)[^\t]*$", gprhead$Wavelengths)
+    waveinfo = NULL
+    wavepatt = NULL
+    wavepatterns = c(
+      Wavelengths = "(\\d+)[^\t]*\t(\\d+)[^\t]*$",
+      RatioFormulation = "W1/W2\\s*?\\((\\d+?)(?:\\s*?nm)?/(\\d+?)(?:\\s*?nm)?\\)"
+    )
+    wavepatterns['RatioFormulations'] = wavepatterns['RatioFormulation']
+    for (winf in names(wavepatterns))
+    {
+      if (winf %in% names(gprhead))
+      {
+        waveinfo = gprhead[[winf]]
+        wavepatt = wavepatterns[winf]
+        break
+      }
+    }
+    if (is.null(waveinfo)) stop("This GenePix version is too old or is not supported. Contact the developer or edit the file to indicate the Wavelengths entry in the headers according to the columns (ex.: Wavelengths=635\t532)")
+    regms = .regex.matches(wavepatt, waveinfo)
+    capmethod = c(median='Median', mean='Mean')[method]
     if (length(regms) == 2)
     {
-      capmethod = c(median='Median', mean='Mean')[method]
       gprcols = list(R = sprintf("F%s %s", regms[1], capmethod), G = sprintf("F%s %s", regms[2], capmethod), 
                      Rb = sprintf("B%s %s", regms[1], capmethod), Gb = sprintf("B%s %s", regms[2], capmethod))
+    }
+    else
+    {
+      wcolpatterns = c(R="(\\d+)\t[a-zA-Z/]+", G="[a-zA-Z/]+\t(\\d+)")
+      for (colnm in names(wcolpatterns))
+      {
+        colpatt = wcolpatterns[colnm]
+        if (grepl(colpatt, waveinfo, perl = T))
+        {
+          wlen = sub(colpatt, '\\1', waveinfo, perl = T)
+          gprcols = list()
+          gprcols[colnm] = sprintf("F%s %s", wlen, capmethod)
+          gprcols[sprintf("%sb", colnm)] = sprintf("B%s %s", wlen, capmethod)
+          break
+        }
+      }
     }
     gprls = limma::read.maimages(fnm, source = srcmethod, green.only = green.only, columns = gprcols, verbose = F)
     if (is.null(gprmrg))

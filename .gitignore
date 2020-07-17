@@ -8,3 +8,5 @@ src/*.dll
 man/*
 testing/*
 build/*
+src-i386/*
+src-x64/*

@@ -10,12 +10,24 @@
 
 .initialize.probes <- function()
 {
+  loadpkgs('devtools', 'Biobase')
+  .self.oneshot()
+}
+
+.initialize.probes.affy <- function()
+{
   loadpkgs('devtools', 'Biobase', 'affy')
   .self.oneshot()
 }
 
+.initialize.probes.oligo <- function()
+{
+  loadpkgs('devtools', 'Biobase', 'oligo')
+  .self.oneshot()
+}
+
 # Loads a local package
-# [[geapinternal string LoadLocalPackage(string pkgDir)]]
+# [[geapinternal string LoadLocalPackage(path pkgDir)]]
 #' @export
 loadLocalPackage <- function(pkgdir)
 {
@@ -40,22 +52,22 @@ unloadPackage <- function(pkgName)
 }
 
 # Gets the internal platform name from a CEL file
-# [[geapexport string GetAffyPlatformName(string celFile)]]
+# [[geapexport string GetAffyPlatformName(path celFile)]]
 #' @export
 getAffyPlatformName <- function(celfile)
 {
-  .initialize.probes()
-  plat = whatcdf(celfile)
+  .initialize.probes.affy()
+  plat = affy::whatcdf(celfile)
   plat = tolower(gsub("[\\s\\_\\-]", "", plat, perl = T))
   plat
 }
 
 # Gets the CDF package name from a CEL file
-# [[geapexport string GetCDFPkgName(string celFile)]]
+# [[geapexport string GetCDFPkgName(path celFile)]]
 #' @export
 getCdfPkgName <- function(celfile)
 {
-  .initialize.probes()
+  .initialize.probes.affy()
   plat = getAffyPlatformName(celfile)
   if (!endsWith(plat, "cdf")) plat = sprintf("%scdf", plat)
   plat
@@ -86,4 +98,21 @@ getAnnProbeNames <- function(pkgname, amount=0)
   }
   return(unique(get(pkgname)$'Probe.Set.Name'))
 }
+
+# Gets the first probes from a 'pd' package name (which must be loaded beforehand)
+# [[geapexport string[] GetPdProbeNames(string pkgname, int limit=0)]]
+#' @export
+getPdProbeNames <- function(pkgname, amount=0)
+{
+  if (!exists(pkgname)) stop(sprintf("The required package ('%s') does not exist or is not currently loaded", pkgname))
+  pkg = get(pkgname)
+  sql = "select distinct man_fsetid from featureSet order by featureSet.fsetid ASC"
+  if (amount > 0)
+    sql = sprintf("%s limit %d", sql, amount)
+  conn = oligo::db(pkg)
+  on.exit({dbDisconnect(conn)})
+  res = as.character(dbGetQuery(conn, sql)[,1])
+  res
+}
+
 

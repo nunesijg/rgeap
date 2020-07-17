@@ -1,5 +1,6 @@
 
 #' @include base.R
+#' @include f-esets.R
 
 ##########################
 # Quality Metrics
@@ -173,13 +174,14 @@
 # - modules : list of 'aqmReportModule' objects
 # - outlierdf : data.frame of outlier, with the found outliers marked with 'x' (columns are hm, box and ma, rows are sample names)
 # - imgfiles : named character vector with output files (hm, out hm, pca, box, out box, dens, msd, ma, out ma)
-# [[geapexec robj_RList QMetricsAnalyze(call eset, string outdir, bool doLog, string[] intgroup, Color rgbNear, Color rgbFar)]]
+# [[geapexec robj_RList QMetricsAnalyze(call eset, path outdir, bool doLog, string[] intgroup, Color rgbNear, Color rgbFar)]]
 #' @export
 qmetrics.analyze <- function(eset, outdir, do.log, intgroup=NULL, rgb.near=NULL, rgb.far=NULL)
 {
   .initialize.qmetrics()
   if (is.null(rgb.near)) rgb.near = c(1,1,0)
   if (is.null(rgb.far)) rgb.far = c(0,0,1)
+  eset = eset.rm.invalid.values(eset)
   aqmres = .qmetricsbase(eset, outdir, do.log=do.log, intgroup=intgroup, rgb.near=rgb.near, rgb.far=rgb.far)
   aqmres$modules = NULL
   aqmres

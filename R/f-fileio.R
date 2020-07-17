@@ -165,7 +165,7 @@ conn.close.all <- function()
   invisible(0)
 }
 
-# [[geapexport assign ReadRDS(string fileName)]]
+# [[geapexport assign ReadRDS(path fileName)]]
 # Loads a RDS data file to a object
 #' @export
 read.rds.file <- function(filename)
@@ -174,7 +174,7 @@ read.rds.file <- function(filename)
   obj
 }
 
-# [[geapexport void SaveRDS(string fileName, call obj)]]
+# [[geapexport void SaveRDS(path fileName, call obj)]]
 # Saves an object to a RDS data file
 #' @export
 save.rds.file <- function(filename, obj)
@@ -183,7 +183,29 @@ save.rds.file <- function(filename, obj)
   invisible(T)
 }
 
-# [[geapexport void WriteMatrix(string fileName, call obj)]]
+# [[geapexport assign ReadTableAtPos(path fileName, long bytePos=0, int nrows=-1)]]
+# Reads a table from a specific binary position. The nrows parameter does not include the row for column names
+#' @export
+read.table.atpos <- function(filename, bytepos=0, nrows=-1)
+{
+  dt = NULL
+  (con = .open.filecon(filename)) %using% {
+    seek(con, bytepos)
+    dt = read.table(con,
+                    header = T,
+                    sep = '\t',
+                    row.names = 1,
+                    nrows = nrows,
+                    blank.lines.skip = F,
+                    skipNul = F,
+                    check.names = F)
+    
+  }
+  colnames(dt) = make.unique(colnames(dt), sep = '_')
+  dt
+}
+
+# [[geapexport void WriteMatrix(path fileName, call obj)]]
 # Saves a matrix or data.frame to a text file
 #' @export
 write.matrix <- function(filename, obj)

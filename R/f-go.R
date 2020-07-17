@@ -10,15 +10,12 @@
 
 .initialize.go <- function()
 {
-  library("stats")
-  library("data.table")
-  library("topGO")
-  library("devtools")
+  loadpkgs('stats', 'data.table', 'devtools', 'topGO')
   .self.oneshot()
 }
 
 # Reads a GAF file
-# [[geapexport assign ReadGAF(string fileName)]]
+# [[geapexport assign ReadGAF(path fileName)]]
 #' @export
 read.gaf <- function(fnamegaf)
 {
@@ -125,7 +122,7 @@ go.append.result.genes <- function(godata, gotable, whichTerms=NULL, significant
 # If pkgpath is provided and is a valid package directory path, pkgname is ignored
 # geneids options are 'entrez', 'genbank', 'alias', 'ensembl', 'symbol', 'genename', 'unigene'
 # Ontology can be 'BP', 'MF' or 'CC'
-# [[geapexport assign Org2GeneList(string pkgPath, string pkgName, string geneids, string ontology)]]
+# [[geapexport assign Org2GeneList(path pkgPath, string pkgName, string geneids, string ontology)]]
 #' @export
 org2genelist <- function(pkgpath=NULL, pkgname=NULL, geneids='symbol', ontology='BP')
 {

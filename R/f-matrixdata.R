@@ -162,7 +162,11 @@ vecmat.has.zeroes <- function(v) any(v == 0)
 
 # [[geapexport bool ContainsNA(call vecOrMat)]]
 #' @export
-vecmat.has.NA <- function(v) any(is.na(v))
+vecmat.has.NA <- function(v) anyNA(v)
+
+# [[geapexport bool ContainsInfinite(call vecOrMat)]]
+#' @export
+vecmat.has.infinite <- function(v) any(is.infinite(v))
 
 # [[geapexport int RowCount(call matrix)]]
 #' @export

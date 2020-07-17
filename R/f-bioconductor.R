@@ -85,11 +85,35 @@ getAllInstalledPackages <- function()
   pkgs
 }
 
-# [[geapexport string[] GetLoadedPackages()]]
+# [[geapexport string[] GetLoadedPackages(bool includeBase = false)]]
 # Gets a character vector listing all currently loaded packages
 #' @export
-getLoadedPackages <- function()
+getLoadedPackages <- function(includeBase=FALSE)
 {
-  pkgs = unique(sub("^package:", "", grep("^package:", search(), value = T, perl = T), perl = T))
+  if (includeBase)
+    pkgs = unique(sub("^package:", "", grep("^package:", search(), value = T, perl = T), perl = T))
+  else
+    pkgs = names(sessionInfo()$otherPkgs)
   pkgs
+}
+
+# [[geapexport int UnloadAllLoadedPackages()]]
+# Unloads the previously loaded packages except rgeap and base packages. Returns the number of detached packages
+#' @export
+unloadAllLoadedPackages <- function()
+{
+  pkgs = setdiff(getLoadedPackages(), packageName())
+  nUnloaded = 0L
+  for (pkg in pkgs)
+  {
+    pkgns = sprintf('package:%s', pkg)
+    success = FALSE
+    tryCatch({
+      detach(pkgns, unload = TRUE, character.only = TRUE, force = TRUE)
+      success = TRUE
+    }, error=function(e) warning(e))
+    if (success)
+      nUnloaded = nUnloaded + 1L
+  }
+  nUnloaded
 }
