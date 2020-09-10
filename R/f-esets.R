@@ -119,6 +119,10 @@ df.to.eset <- function(df)
   }
   valCols = df.getcols.bytype(df, c('numeric', 'integer'))
   valCols = as.matrix(valCols)
+  if (typeof(valCols) == "integer")
+  {
+    valCols = matrix(as.numeric(valCols), ncol=ncol(valCols), nrow=nrow(valCols), dimnames=dimnames(valCols))
+  }
   eset = new("ExpressionSet", exprs = valCols)
   
   attrCols = df.getcols.bytype(df, c('character', 'factor', 'multifactor', 'list'))
@@ -165,14 +169,15 @@ esets.merge <- function(...)
   #argls = filter.args.bytype(types = c('matrix', 'data.frame', 'ExpressionSet'), ...)
   if (length(argls) == 0) stop("At least one argument must be a matrix, data.frame or ExpressionSet")
   if (length(argls) == 1) return(df.to.eset(argls[[1]]))
-  rownms = NULL
+  dtmatchcols = NULL
   dtls = list()
   platls = list()
   platcolnms = character(0)
   matinds = NULL
   hasargnms = !is.null(names(argls))
   ncolfinal = 0
-  for (i in 1:length(argls))
+  dtplat = NULL
+  for (i in 1L:length(argls))
   {
     ci = as.character(i)
     dt = argls[[i]]
@@ -188,20 +193,45 @@ esets.merge <- function(...)
         platcolnms = c(platcolnms, pcnms)
       }
     }
-    #if (inherits(dt, "MAList")) dt = malist.to.eset(dt)
-    #if (inherits(dt, "ExpressionSet")) dt = exprs(dt)
-    #if (inherits(dt, "data.frame")) dt = as.matrix(df.getcols.bytype(df, c('integer', 'numeric')))
     dtls[[i]] = dt
-    if (is.null(rownms))
+    rownms = rownames(dt)
+    if (is.null(dtmatchcols))
     {
-      rownms = rownames(dt)
-      matinds = matrix(0L, nrow=nrow(dt), ncol=length(argls), dimnames = list(rownms, character(0)) ) #data.frame(V1=(1L:nrow(dt)), row.names = rownms)
+      dtmatchcols = data.frame(row.names=rownms)
+      if (!is.null(dtplat))
+      {
+        for (platcol in colnames(dtplat))
+        {
+          vcol = dtplat[,platcol]
+          if (anyDuplicated(vcol, incomparables = NA) != 0L) next
+          dtmatchcols[,platcol] = vcol
+        }
+      }
+      matinds = matrix(0L, nrow=nrow(dt), ncol=length(argls), dimnames = list(rownms, character(0)) )
       matinds[,1] = 1L:nrow(dt)
       ncolfinal = ncol(dt)
-    } else {
-      minds = match(rownms, rownames(dt))
-      #rownms = intersect(rownms, rownames(dt))
-      if (all(minds == 0)) stop(sprintf("Argument %s has no matching row names", (if (hasargnms) sprintf("%s (%d)", names(argls)[i], i) else as.character(i) ) ))
+    }
+    else
+    {
+      minds = match(rownames(dtmatchcols), rownms, nomatch = NA_integer_)
+      allmismatch = all(is.na(minds))
+      if (allmismatch)
+      {
+        tol = min(c(nrow(dt), max(c(nrow(dt) / 2, nrow(dtmatchcols) / 10 ))))  # Merge tolerance
+        for (platcol in colnames(dtmatchcols))
+        {
+          minds = match(dtmatchcols[, platcol], rownms, nomatch = NA_integer_)
+          allmismatch = sum(!is.na(minds)) < tol
+          if (!allmismatch)
+            break
+        }
+      }
+      if (allmismatch)
+      {
+        if (length(argls) == 2L && ncol(dtls[[1]]) == 0L) # If the first argument has no value columns, omits it
+          return(ceset)
+        stop(sprintf("Argument %s has no matching row names.\nThe first row names are: %s", (if (hasargnms) sprintf("%s (%d)", names(argls)[i], i) else as.character(i) ), paste0(head(rownames(dt)), collapse=', ')))
+      }
       matinds[,i] = minds
       ncolfinal = ncolfinal + ncol(dt)
     }
@@ -211,7 +241,6 @@ esets.merge <- function(...)
   matinds = matinds[rsel,]
   fmat = matrix(NA_real_, nrow=nrow(matinds), ncol=ncolfinal, dimnames = list(rownames(matinds), character(0)) )
   fdfplat = data.frame(row.names = rownames(matinds))
-  #platmat = data.frame()
   currcol = 1L
   assign('ainds', matinds, envir=globalenv())
   assign('afmat', fmat, envir=globalenv())
