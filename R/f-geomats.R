@@ -49,7 +49,7 @@ read.series.matrix <- function(filename, include.metainfo=T)
                       comment.char = '', stringsAsFactors = F)
   close(con)
   con = NULL
-  rownames(dtvals) = make.unique(dtvals[,1])
+  rownames(dtvals) = make.unique(as.character(dtvals[,1]))
   dtvals = dtvals[,-1]
   # Organizing the data headers
   dtseries[1,1] = sub('^ï»¿', '', dtseries[1,1])
@@ -139,8 +139,14 @@ read.soft.data <- function(filename, multifactors=F, multfsep=' /// ')
   }
   dt = data.frame()
   (con = .open.filecon(filename)) %using% {
-    dt = read.table(con, header = T, sep = '\t', quote = quote, skip = nskip, row.names = 1,
+    dt = read.table(con, header = T, sep = '\t', quote = quote, skip = nskip,
                     nrows = nrows, blank.lines.skip = F, skipNul = F, check.names = F)
+    if (anyNA(dt[,1L]))
+    {
+      dt = dt[-which(is.na(dt[,1L])),]
+    }
+    row.names(dt) = dt[,1L]
+    dt = dt[,-1L, drop=FALSE]
     if (multifactors)
     {
       colsel = column.classes(dt) %in% c("character", "factor")
