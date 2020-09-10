@@ -106,11 +106,18 @@ getPdProbeNames <- function(pkgname, amount=0)
 {
   if (!exists(pkgname)) stop(sprintf("The required package ('%s') does not exist or is not currently loaded", pkgname))
   pkg = get(pkgname)
-  sql = "select distinct man_fsetid from featureSet order by featureSet.fsetid ASC"
-  if (amount > 0)
-    sql = sprintf("%s limit %d", sql, amount)
   conn = oligo::db(pkg)
   on.exit({dbDisconnect(conn)})
+  sql = "PRAGMA table_info(featureSet)"
+  colnms = as.character(dbGetQuery(conn, sql)$name)
+  cands = c('man_fsetid', 'transcript_cluster_id')
+  selcands = cands %in% colnms
+  if (!any(selcands))
+    stop(sprintf("This annotation package (%s) does not provide one of the following valid columns:", pkgname, paste (cands, collapse = ', ')))
+  tgtcol = cands[which(selcands)[1]]
+  sql = sprintf("select distinct %s from featureSet order by featureSet.fsetid ASC", tgtcol)
+  if (amount > 0)
+    sql = sprintf("%s limit %d", sql, amount)
   res = as.character(dbGetQuery(conn, sql)[,1])
   res
 }
