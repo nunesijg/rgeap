@@ -95,6 +95,12 @@ setMethod('initialize', 'serialelem.list',
             } else if (is.factor(value))
             {
               tmpls = list()
+              if (anyNA(value))
+              {
+                if (!('' %in% levels(value)))
+                  levels(value) = c(levels(value), '')
+                value[is.na(value)] = ''
+              }
               tmpls$levels = new('serialelem.atomic', levels(value))
               tmpls$indexes = new('serialelem.atomic', as.integer(value))
               value = tmpls
