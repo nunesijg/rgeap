@@ -85,7 +85,7 @@ read.genepix <- function(filenames, method='mean', green.only=F)
   }
   basenms = make.names(sub('\\.[^\\.]*?$', '', basename(filenames)), T)
   gprmrg$targets = basenms
-  for (lslot in c('R', 'G', 'Rb', 'Gb'))
+  for (lslot in c('R', 'G', 'Rb', 'Gb', 'E', 'Eb'))
   {
     if (lslot %in% names(gprmrg))
     {
