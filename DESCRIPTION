@@ -35,6 +35,7 @@ Collate:
     'f-graphics.R'
     'f-illumina.R'
     'f-lang.R'
+    'f-nanostring.R'
     'f-probes.R'
     'f-qualitymetrics.R'
     'f-results.R'
@@ -55,6 +56,7 @@ Imports:
     illuminaio,
     limma,
     beadarray,
+    NanoStringNorm,
     arrayQualityMetrics,
     data.table,
     topGO,
