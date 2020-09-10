@@ -69,25 +69,73 @@
   .self.oneshot()
 }
 
+# Checks if a CEL file is only supported by oligo
+is.oligo.only.celfile <- function(celFileName)
+{
+  cdfnm = getCdfPkgName(celFileName)
+  return(length(grep("gene2[01]st|ex[1-2][0-1]st|hta20|mta10", cdfnm)) == 1)
+}
+
+# Reads CEL files using affxparser
+read.affxparser.cel.files <- function(samplefiles)
+{
+  .initialize.affy()
+  mexprs = NULL
+  cdfnm = NULL
+  colnms = sub(pattern = ".CEL$", replacement = '', x = basename(samplefiles))
+  nr = 0L
+  nc = 0L
+  i = 0L
+  for (smpfile in samplefiles)
+  {
+    i = i + 1L
+    isinit = is.null(mexprs)
+    smpdata = affxparser::readCel(smpfile, readHeader = isinit, verbose = FALSE)
+    if (isinit)
+    {
+      mexprs = matrix(NA_real_, nrow=length(smpdata$intensities), ncol=length(samplefiles),
+                      dimnames=list(1L:length(smpdata$intensities), colnms))
+      cdfnm = smpdata$header$chiptype
+      nc = smpdata$header$cols
+      nr = smpdata$header$rows
+    }
+    mexprs[,i] = smpdata$intensities
+  }
+  assayenv = new.env()
+  assayenv$exprs = mexprs
+  new('AffyBatch', assayData=assayenv,
+      cdfName=cdfnm,
+      nrow=nr,
+      ncol=nc,
+      annotation=affy::cleancdfname(cdfnm))
+}
+
 # [[geapexec assign AffyReadCelFiles(path[] fileNames)]]
 #' @export
 read.affy.cel.files <- function(samplefiles) 
 {
   .initialize.affy()
-  affyRaw = affy::ReadAffy(filenames = samplefiles, widget = F, verbose = F)
-  colnames(exprs(affyRaw)) = sub(pattern = ".CEL$", replacement = '', x = colnames(exprs(affyRaw)), ignore.case = T)
-  rownames(affyRaw@phenoData@data) = sub(pattern = ".CEL$", replacement = '', x = rownames(affyRaw@phenoData@data), ignore.case = T)
-  rownames(affyRaw@protocolData@data) = sub(pattern = ".CEL$", replacement = '', x = rownames(affyRaw@protocolData@data), ignore.case = T)
+  if (is.oligo.only.celfile(samplefiles[1]))
+  {
+    affyRaw = read.affxparser.cel.files(samplefiles)
+  }
+  else
+  {
+    affyRaw = affy::ReadAffy(filenames = samplefiles, widget = F, verbose = F)
+    colnames(exprs(affyRaw)) = sub(pattern = ".CEL$", replacement = '', x = colnames(exprs(affyRaw)), ignore.case = T)
+    rownames(affyRaw@phenoData@data) = sub(pattern = ".CEL$", replacement = '', x = rownames(affyRaw@phenoData@data), ignore.case = T)
+    rownames(affyRaw@protocolData@data) = sub(pattern = ".CEL$", replacement = '', x = rownames(affyRaw@protocolData@data), ignore.case = T)
+  }
   return(affyRaw)
 }
 
 # [[geapexec assign OligoReadCelFiles(path[] fileNames)]]
 #' @export
-read.oligo.cel.files <- function(samplefiles) 
+read.oligo.cel.files <- function(samplefiles, ...) 
 {
   .initialize.oligo()
   smpnms = sub(pattern = ".CEL$", replacement = '', x = basename(samplefiles), ignore.case = T)
-  affyRaw = oligo::read.celfiles(samplefiles, sampleNames = smpnms)
+  affyRaw = oligo::read.celfiles(samplefiles, sampleNames = smpnms, ...)
   return(affyRaw)
 }
 
@@ -172,6 +220,8 @@ treat.oligo <- function(affyRaw, bgCorrect, normMethod, summaryMethod)
       }
       else
       {
+        if (bgCorrect == 'mas' && is.null(mmSequence(afb)))
+          stop("Cannot use the MAS background correction method due to missing mismatch (MM) table. Use RMA or LESN instead")
         afb = oligo::backgroundCorrect(afb, method = bgCorrect, verbose = FALSE)
       }
     }
