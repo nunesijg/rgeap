@@ -158,7 +158,7 @@ column.classes <- function(m)
 
 # [[geapexport bool ContainsZero(call vecOrMat)]]
 #' @export
-vecmat.has.zeroes <- function(v) any(v == 0)
+vecmat.has.zeroes <- function(v) any(v == 0, na.rm = TRUE)
 
 # [[geapexport bool ContainsNA(call vecOrMat)]]
 #' @export
