@@ -490,7 +490,7 @@ xalloc.matrix <- function(defval, ncol, nrow, binsize.colnames=0, binsize.rownam
 
 
 # Reads the bytes from a file to the target object. CAUTION: This may crash the entire R session
-# [[geapexport void ReadBinFile2Obj(string fileName, int skip, int binLen, long objPtr)]]
+# [[geapexport void ReadBinFile2Obj(path fileName, int skip, int binLen, long objPtr)]]
 #' @rdname serial
 #' @export
 read.bin.file2obj <- function(fname, skip, binLen, objPtr)
@@ -508,7 +508,7 @@ read.bin.file2obj <- function(fname, skip, binLen, objPtr)
 }
 
 # Saves the objects (by name) from an environment to a rdata file
-# [[geapexport void SaveSession(string filename, params string[] objnames)]]
+# [[geapexport void SaveSession(path filename, params string[] objnames)]]
 #' @rdname serial
 #' @export
 save.session <- function(filename, objnames)
@@ -525,7 +525,7 @@ save.session <- function(filename, objnames)
 }
 
 # Loads the objects (by name) from a rdata file to the current environment 
-# [[geapexport void LoadSession(string filename)]]
+# [[geapexport void LoadSession(path filename)]]
 #' @rdname serial
 #' @export
 load.session <- function(filename)

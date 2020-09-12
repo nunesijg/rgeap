@@ -16,7 +16,7 @@
 }
 
 # Reads an Illumina data matrix file, returns an ExpressionSetIllumina
-# [[geapexport assign ReadIlluminaMatrix(string fileName)]]
+# [[geapexport assign ReadIlluminaMatrix(path fileName)]]
 #' @export
 read.illumina.matrix <- function(filename)
 {#TODO: There is ...?
@@ -45,7 +45,7 @@ read.illumina.matrix <- function(filename)
 }
 
 # Reads one or more Illumina data matrix files, returns an ExpressionSetIllumina
-# [[geapexport assign ReadIlluminaMatrices(params string[] fileNames)]]
+# [[geapexport assign ReadIlluminaMatrices(path[] fileNames)]]
 #' @export
 read.illumina.matrices <- function(filenames)
 {
@@ -75,18 +75,18 @@ treat.illumina.matrix <- function(elumi, norm.method = 'quantile', transform = '
 }
 
 # Reads a BGX file, returns a data.frame
-# [[geapexport assign ReadIlluminaBGX(string fileName)]]
+# [[geapexport assign ReadIlluminaBGX(path fileName)]]
 #' @export
 read.illumina.bgx <- function(filename)
 {
   .initialize.illumina()
-  bgx <- readBGX(filename)
-  bgx <- bgx$probes
-  rownames(bgx) <- bgx$Probe_Id
+  bgx = illuminaio::readBGX(filename)
+  bgx = bgx$probes
+  rownames(bgx) = bgx$Probe_Id
   return(bgx)
 }
 
-# [[geapexport robj_RList CheckIlluminaIDAT(string fileName, int limitIds=1000)]]
+# [[geapexport robj_RList CheckIlluminaIDAT(path fileName, int limitIds=1000)]]
 #' @export
 check.illumina.idat <- function(filename, limitids=1000L)
 {
@@ -99,7 +99,7 @@ check.illumina.idat <- function(filename, limitids=1000L)
 
 
 # Exemplos: GSE80080 e GSE75550
-# [[geapexec assign ReadIlluminaIDAT(string[] idatFiles, string bgxfile, string[] annotations, int tolerance=0)]]
+# [[geapexec assign ReadIlluminaIDAT(path[] idatFiles, path bgxfile, string[] annotations, int tolerance=0)]]
 #' @export
 read.illumina.idat <- function(idatfiles, bgxfile, annotation='Symbol', tolerance = 0L)
 {

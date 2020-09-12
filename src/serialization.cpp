@@ -80,9 +80,6 @@ intptr_t getMemAddress(SEXP& obj, bool outMemInfo = false)
     }
     else
     {
-      //retAddr = (intptr_t)RTRACE(obj);
-      
-      //retAddr = (intptr_t)(void*)(CAR(obj));
       retAddr = (intptr_t)(DATAPTR(obj));
     }
     break;
@@ -164,54 +161,13 @@ CharacterVector rawToCharVec(RawVector& raw, bool firstOnly = false)
   return vec;
 }
 
-// CharacterVector rawToCharVec(RawVector& raw, bool firstOnly = false)
-// {
-//   uint32_t currSize = 0, i = 0;
-//   std::vector<uint32_t> inds, sizes;
-//   for (RawVector::iterator it = raw.begin(); it != raw.end(); ++it, ++i)
-//   {
-//     if ((*it) == '\0')
-//     {
-//       sizes.push_back(currSize);
-//       if (firstOnly)
-//       {
-//         //inds.push_back(0);
-//         break;
-//       }
-//       currSize = 0;
-//     }
-//     else
-//     {
-//       if (currSize == 0)
-//       {
-//         inds.push_back(i);
-//       }
-//       currSize++;
-//     }
-//   }
-//   if (inds.size() > sizes.size() && currSize != 0 && !(firstOnly && sizes.size() != 0))
-//   {
-//     sizes.push_back(LENGTH(raw) - inds[inds.size() - 1]);
-//   }
-//   CharacterVector vec = CharacterVector(sizes.size());
-//   char * chptr = (char*)(RAW(raw));
-//   for (unsigned int j = 0; j < sizes.size() && j < inds.size(); j++)
-//   {
-//     Rcout << inds[j] << "\t" << sizes[j] << "\n";
-//     uint32_t index = inds[j], size = sizes[j];
-//     vec[j] = Rf_mkCharLen(&chptr[index], size);
-//   }
-//   return vec;
-// }
-
-
 // [[Rcpp::export]]
 RawVector charVecToRaw(StringVector& strvec)
 {
   size_t totlen = 0;
   std::vector<size_t> sizes;
   uint32_t j = 0;
-  for (unsigned int i = 0; i < strvec.size(); i++)
+  for (R_xlen_t i = 0; i < strvec.size(); i++)
   {
     size_t size = LENGTH(strvec(i));
     totlen += (size + 1);
@@ -219,7 +175,7 @@ RawVector charVecToRaw(StringVector& strvec)
   }
   RawVector rawvec = RawVector(totlen);
   char * chptr = (char*)(RAW(rawvec));
-  for (unsigned int i = 0; i < strvec.size(); i++)
+  for (R_xlen_t i = 0; i < strvec.size(); i++)
   {
     memcpy(&chptr[j], CHAR(STRING_ELT(strvec, i)), sizes[i]);
     j += (sizes[i] + 1);

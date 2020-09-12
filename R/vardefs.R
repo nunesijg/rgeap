@@ -19,13 +19,18 @@ tag.error = "!E!"
 tag.status = "!S!"
 tag.percent = "!P!"
 tag.memory = "!M!"
+tag.package = "!K!"
 
 # Option tags
 options(tag.error = "!E!",
         tag.status = "!S!",
         tag.percent = "!P!",
         tag.memory="!M!",
+        tag.package="!K!",
         tag.output="!0!")
+
+# Sets the API mode for GEAP
+options(geap.is.api = getOption('geap.is.api', FALSE))
 
 # "Always SVG" (no WMF) option for some of the graphics rendering
 options(force.svg = TRUE)

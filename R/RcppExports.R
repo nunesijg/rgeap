@@ -5,12 +5,24 @@ check.file.structure <- function(filename) {
     .Call('_rgeap_checkFileStructure', PACKAGE = 'rgeap', filename)
 }
 
-track.matching.lines <- function(filename, matchLines, prefixOnly = FALSE, lineFeedOnly = TRUE) {
-    .Call('_rgeap_trackMatchingLines', PACKAGE = 'rgeap', filename, matchLines, prefixOnly, lineFeedOnly)
+track.matching.lines <- function(filename, matchLines, prefixOnly = FALSE, lineFeedOnly = TRUE, binOffset = 0L, maxBinRead = -1L) {
+    .Call('_rgeap_trackMatchingLines', PACKAGE = 'rgeap', filename, matchLines, prefixOnly, lineFeedOnly, binOffset, maxBinRead)
+}
+
+track.matching.string.binpos <- function(filename, candidateStrings, binOffset = 0L, maxBinRead = -1L, lineStartOnly = TRUE) {
+    .Call('_rgeap_trackMatchingStringBinPos', PACKAGE = 'rgeap', filename, candidateStrings, binOffset, maxBinRead, lineStartOnly)
+}
+
+track.next.line.binpos <- function(filename, binOffset = 0L, skipLines = 0L) {
+    .Call('_rgeap_trackNextLineBinPos', PACKAGE = 'rgeap', filename, binOffset, skipLines)
 }
 
 read.bin2buffer <- function(filename, skip, binLen, objPtr) {
     .Call('_rgeap_readBin2Mem', PACKAGE = 'rgeap', filename, skip, binLen, objPtr)
+}
+
+clean.opened.streams <- function() {
+    .Call('_rgeap_cleanOpenedStreams', PACKAGE = 'rgeap')
 }
 
 substr.multi <- function(text, starts, sizes) {

@@ -62,7 +62,7 @@ read.agilent.header <- function(filename)
 }
 
 # Reads multiple files, returns a EListRaw (single channel) or RGList (dual channel)
-# [[geapexec assign ReadAgilentTXT(string[] filenames, string method, bool singleChannel = true) ]]
+# [[geapexec assign ReadAgilentTXT(path[] filenames, string method, bool singleChannel = true) ]]
 #' @export
 read.agilent <- function(filenames, method='median', green.only=F)
 {

@@ -17,8 +17,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // trackMatchingLines
-NumericVector trackMatchingLines(const Rcpp::String& filename, CharacterVector& matchLines, bool prefixOnly, bool lineFeedOnly);
-RcppExport SEXP _rgeap_trackMatchingLines(SEXP filenameSEXP, SEXP matchLinesSEXP, SEXP prefixOnlySEXP, SEXP lineFeedOnlySEXP) {
+NumericVector trackMatchingLines(const Rcpp::String& filename, CharacterVector& matchLines, bool prefixOnly, bool lineFeedOnly, long binOffset, long maxBinRead);
+RcppExport SEXP _rgeap_trackMatchingLines(SEXP filenameSEXP, SEXP matchLinesSEXP, SEXP prefixOnlySEXP, SEXP lineFeedOnlySEXP, SEXP binOffsetSEXP, SEXP maxBinReadSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -26,7 +26,37 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< CharacterVector& >::type matchLines(matchLinesSEXP);
     Rcpp::traits::input_parameter< bool >::type prefixOnly(prefixOnlySEXP);
     Rcpp::traits::input_parameter< bool >::type lineFeedOnly(lineFeedOnlySEXP);
-    rcpp_result_gen = Rcpp::wrap(trackMatchingLines(filename, matchLines, prefixOnly, lineFeedOnly));
+    Rcpp::traits::input_parameter< long >::type binOffset(binOffsetSEXP);
+    Rcpp::traits::input_parameter< long >::type maxBinRead(maxBinReadSEXP);
+    rcpp_result_gen = Rcpp::wrap(trackMatchingLines(filename, matchLines, prefixOnly, lineFeedOnly, binOffset, maxBinRead));
+    return rcpp_result_gen;
+END_RCPP
+}
+// trackMatchingStringBinPos
+NumericVector trackMatchingStringBinPos(const Rcpp::String& filename, StringVector& candidateStrings, long binOffset, long maxBinRead, bool lineStartOnly);
+RcppExport SEXP _rgeap_trackMatchingStringBinPos(SEXP filenameSEXP, SEXP candidateStringsSEXP, SEXP binOffsetSEXP, SEXP maxBinReadSEXP, SEXP lineStartOnlySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::String& >::type filename(filenameSEXP);
+    Rcpp::traits::input_parameter< StringVector& >::type candidateStrings(candidateStringsSEXP);
+    Rcpp::traits::input_parameter< long >::type binOffset(binOffsetSEXP);
+    Rcpp::traits::input_parameter< long >::type maxBinRead(maxBinReadSEXP);
+    Rcpp::traits::input_parameter< bool >::type lineStartOnly(lineStartOnlySEXP);
+    rcpp_result_gen = Rcpp::wrap(trackMatchingStringBinPos(filename, candidateStrings, binOffset, maxBinRead, lineStartOnly));
+    return rcpp_result_gen;
+END_RCPP
+}
+// trackNextLineBinPos
+NumericVector trackNextLineBinPos(const Rcpp::String& filename, long binOffset, int skipLines);
+RcppExport SEXP _rgeap_trackNextLineBinPos(SEXP filenameSEXP, SEXP binOffsetSEXP, SEXP skipLinesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::String& >::type filename(filenameSEXP);
+    Rcpp::traits::input_parameter< long >::type binOffset(binOffsetSEXP);
+    Rcpp::traits::input_parameter< int >::type skipLines(skipLinesSEXP);
+    rcpp_result_gen = Rcpp::wrap(trackNextLineBinPos(filename, binOffset, skipLines));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -41,6 +71,16 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type binLen(binLenSEXP);
     Rcpp::traits::input_parameter< intptr_t >::type objPtr(objPtrSEXP);
     rcpp_result_gen = Rcpp::wrap(readBin2Mem(filename, skip, binLen, objPtr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cleanOpenedStreams
+bool cleanOpenedStreams();
+RcppExport SEXP _rgeap_cleanOpenedStreams() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(cleanOpenedStreams());
     return rcpp_result_gen;
 END_RCPP
 }
@@ -197,8 +237,11 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_rgeap_checkFileStructure", (DL_FUNC) &_rgeap_checkFileStructure, 1},
-    {"_rgeap_trackMatchingLines", (DL_FUNC) &_rgeap_trackMatchingLines, 4},
+    {"_rgeap_trackMatchingLines", (DL_FUNC) &_rgeap_trackMatchingLines, 6},
+    {"_rgeap_trackMatchingStringBinPos", (DL_FUNC) &_rgeap_trackMatchingStringBinPos, 5},
+    {"_rgeap_trackNextLineBinPos", (DL_FUNC) &_rgeap_trackNextLineBinPos, 3},
     {"_rgeap_readBin2Mem", (DL_FUNC) &_rgeap_readBin2Mem, 4},
+    {"_rgeap_cleanOpenedStreams", (DL_FUNC) &_rgeap_cleanOpenedStreams, 0},
     {"_rgeap_multiSubstring", (DL_FUNC) &_rgeap_multiSubstring, 3},
     {"_rgeap_max_index", (DL_FUNC) &_rgeap_max_index, 1},
     {"_rgeap_str_size", (DL_FUNC) &_rgeap_str_size, 1},

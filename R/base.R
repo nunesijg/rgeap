@@ -70,7 +70,7 @@ remove.vars <- function(varnms)
   if (any(exvars))
   {
     exvars = names(exvars)[exvars]
-    remove(list = exvars)
+    remove(list = exvars, envir = parent.frame(), inherits = T)
     return(T)
   }
   return(F)
@@ -147,7 +147,8 @@ filter.args.bytype <- function(types, ...)
 # Sends a status message to GEAP's GUI (C#)
 .give.status <- function(percent = NA_integer_, message = NA_character_, engMsg = message)
 {
-  if (!is.na(percent))
+  isapi = is.api()
+  if (!is.na(percent) && isapi)
   {
     if (percent < 0) percent = 0
     else if (percent > 100) percent = 100
@@ -155,11 +156,12 @@ filter.args.bytype <- function(types, ...)
   }
   if(!is.na(message))
   {
+    prefix = if (isapi) tag.status else ""
     if (get.geap.option('geap.text.lang', 'en') == 'en')
     {
-      writeLines(paste0(tag.status, engMsg))
+      writeLines(paste0(prefix, engMsg))
     } else {
-      writeLines(paste0(tag.status, message))
+      writeLines(paste0(prefix, message))
     }
   }
   invisible(0)
@@ -203,7 +205,6 @@ is.windows <- function()
 #' @export
 loadpkgs <- function(...)
 {
-  #argls = list(...)
   pkgs = unlist(filter.args.bytype(types = 'character', ...))
   verbose = .is.verbose(...)
   unloaded = NULL
@@ -221,12 +222,21 @@ loadpkgs <- function(...)
       library(pkgname, verbose = F, character.only = T, logical.return = T)
     }
   }
+  printpkg = if (is.api()) (function(pkgnm) writeLines(paste0(tag.package, pkgnm)) ) else (function(...) NULL)
   loadedpkgs = search()
   for (pkgname in pkgs)
   {
-    if (pkgname %in% loadedpkgs || sprintf("package:%s", pkgname) %in% loadedpkgs) next
+    if (pkgname %in% loadedpkgs || sprintf("package:%s", pkgname) %in% loadedpkgs)
+    {
+      printpkg(pkgname)
+      next
+    }
     succ = suppressPackageStartupMessages(loadfun(pkgname))
-    if (!succ)
+    if (succ)
+    {
+      printpkg(pkgname)
+    }
+    else
     {
       unloaded[length(unloaded)+1] = pkgname
     }
@@ -286,6 +296,12 @@ garbage.collect <- function(full=T)
 {
   gc(verbose = F, full = full)
   invisible(0)
+}
+
+# Checks if this package is listening to the GEAP API from an executable
+is.api <- function()
+{
+  getOption('geap.is.api', FALSE)
 }
 
 # Gets an argument by its name inside the dots of a parent funtion. If a default value is provided, this is used if the argument is missing

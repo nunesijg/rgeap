@@ -19,9 +19,9 @@
 #' @export
 eset.insert.platdata <- function(eset, platdf)
 {
+  .initialize.esets()
   if (ncol(platdf) == 0) return(eset)
   platrnms = rownames(platdf)
-  # TODO: platdf teria que ter uma coluna identificadora (ID), assim poderia-se dar merge nos row.names entre eset e platdf
   dt = exprs(eset)
   match.count = function(a, b) sum(!is.na(base::match(a, b)))
   rnms = rownames(dt)
@@ -47,6 +47,37 @@ eset.insert.platdata <- function(eset, platdf)
 }
 
 
+# Merges the platform data into a ExpressionSet
+# [[geapexport assign ESetMergePlatformData(call eset, call platDataFrame, string colID="")]]
+#' @export
+eset.merge.platdata <- function(eset, platdf, colid=NA_character_)
+{
+  .initialize.esets()
+  if (inherits(platdf, "AnnotatedDataFrame")) platdf = Biobase::pData(platdf)
+  else if (is.matrix(platdf)) platdf = as.data.frame(platdf)
+  if (ncol(platdf))
+  if (!is.na(colid))
+  {
+    if (is.numeric(colid)) colid = colnames(platdf)[colid]
+    if (is.character(colid) && colid %in% colnames(platdf))
+    {
+      rownames(platdf) = platdf[,colid]
+    }
+  }
+  adf = new("AnnotatedDataFrame", data=platdf, varMetadata=data.frame(names(platdf), row.names=names(platdf)))
+  eset2 = if (is.null(eset)) df.to.eset(adf) else esets.merge(eset, adf)
+  eset2
+}
+
+# Checks if the object is a ExpressionSet or an eSet that implements the exprs method
+is.expset <- function(eset)
+{
+  if (inherits(eset, "ExpressionSet")) return(TRUE)
+  .initialize.esets()
+  if (inherits(eset, 'eSet') && hasMethod(exprs, class(eset)))
+    return(TRUE)
+  FALSE
+}
 
 # Gets the columns of data.frame whose values inherit the type names
 df.getcols.bytype <- function(df, types)
@@ -69,13 +100,29 @@ df.to.eset <- function(df)
   {
     return(malist.to.eset(df))
   }
+  if (is.expset(df))
+  {
+    eset = new("ExpressionSet", exprs=exprs(df))
+    assayData(eset) = assayData(df)
+    fData(eset) = fData(df)
+    return(eset)
+  }
+  if (inherits(df, 'AnnotatedDataFrame'))
+  {
+    eset = new("ExpressionSet", exprs=matrix(numeric(0), nrow=nrow(df), dimnames=list(rownames(df), character(0))))
+    featureData(eset) = new("AnnotatedDataFrame", data = Biobase::pData(df), varMetadata = data.frame(colnames(df), row.names = colnames(df)))
+    return(eset)
+  }
   if (is.matrix(df))
   {
     return(new("ExpressionSet", exprs=df))
   }
   valCols = df.getcols.bytype(df, c('numeric', 'integer'))
-  #if (ncol(valCols) == 0) stop("Not enough columns with numeric values")
   valCols = as.matrix(valCols)
+  if (typeof(valCols) == "integer")
+  {
+    valCols = matrix(as.numeric(valCols), ncol=ncol(valCols), nrow=nrow(valCols), dimnames=dimnames(valCols))
+  }
   eset = new("ExpressionSet", exprs = valCols)
   
   attrCols = df.getcols.bytype(df, c('character', 'factor', 'multifactor', 'list'))
@@ -84,21 +131,30 @@ df.to.eset <- function(df)
   if (hasPlat)
   {
     eset = eset.insert.platdata(eset, attrCols)
-    #vmd = names(attrCols)
-    #featureData(eset) = new("AnnotatedDataFrame", data = attrCols, varMetadata = data.frame(vmd, row.names = vmd))
   }
   return(eset)
 }
 
-# Reads a table as data.frame and converts it to ExpressionSet (exprs slot for numeric and featureData for character) 
-# [[geapexec assign ReadTXT2ESet(string fileName, int skip=0)]]
+# Reads one or more tables as data.frame and converts it to ExpressionSet (exprs slot for numeric and featureData for character). The tables are merged when necessary.
+# [[geapexec assign ReadTXT2ESet(path[] fileNames, int skip=0)]]
 #' @export
-txtfile.to.eset <- function(filename, nskip=0)
+txtfile.to.eset <- function(filenames, nskip=0)
 {
   .initialize.esets()
-  dt = read.table(filename, header = T, sep='\t', skip=nskip, row.names = 1, blank.lines.skip = F, skipNul = F, check.names = F)
-  eset = df.to.eset(dt)
-  return(dt)
+  eset = NULL
+  for (fname in filenames)
+  {
+    dt = read.table(fname, header = T, sep='\t', skip=nskip, row.names = 1, blank.lines.skip = F, skipNul = F, check.names = F)
+    if (is.null(eset))
+    {
+      eset = df.to.eset(dt)
+    }
+    else
+    {
+      eset = esets.merge(eset, dt)
+    }
+  }
+  return(eset)
 }
 
 # Merges two or more matrices, data.frames or ExpressionSet's into a single ExpressionSet
@@ -108,19 +164,20 @@ esets.merge <- function(...)
 {
   .initialize.esets()
   argls = .get.valid.args(...)
-  argls$types = c('matrix', 'data.frame', 'ExpressionSet')
+  argls$types = c('matrix', 'data.frame', 'ExpressionSet', 'eSet', 'AnnotatedDataFrame')
   argls = base::do.call(filter.args.bytype, argls)
   #argls = filter.args.bytype(types = c('matrix', 'data.frame', 'ExpressionSet'), ...)
   if (length(argls) == 0) stop("At least one argument must be a matrix, data.frame or ExpressionSet")
   if (length(argls) == 1) return(df.to.eset(argls[[1]]))
-  rownms = NULL
+  dtmatchcols = NULL
   dtls = list()
   platls = list()
   platcolnms = character(0)
   matinds = NULL
   hasargnms = !is.null(names(argls))
   ncolfinal = 0
-  for (i in 1:length(argls))
+  dtplat = NULL
+  for (i in 1L:length(argls))
   {
     ci = as.character(i)
     dt = argls[[i]]
@@ -136,20 +193,45 @@ esets.merge <- function(...)
         platcolnms = c(platcolnms, pcnms)
       }
     }
-    #if (inherits(dt, "MAList")) dt = malist.to.eset(dt)
-    #if (inherits(dt, "ExpressionSet")) dt = exprs(dt)
-    #if (inherits(dt, "data.frame")) dt = as.matrix(df.getcols.bytype(df, c('integer', 'numeric')))
     dtls[[i]] = dt
-    if (is.null(rownms))
+    rownms = rownames(dt)
+    if (is.null(dtmatchcols))
     {
-      rownms = rownames(dt)
-      matinds = matrix(0L, nrow=nrow(dt), ncol=length(argls), dimnames = list(rownms, character(0)) ) #data.frame(V1=(1L:nrow(dt)), row.names = rownms)
+      dtmatchcols = data.frame(row.names=rownms)
+      if (!is.null(dtplat))
+      {
+        for (platcol in colnames(dtplat))
+        {
+          vcol = dtplat[,platcol]
+          if (anyDuplicated(vcol, incomparables = NA) != 0L) next
+          dtmatchcols[,platcol] = vcol
+        }
+      }
+      matinds = matrix(0L, nrow=nrow(dt), ncol=length(argls), dimnames = list(rownms, character(0)) )
       matinds[,1] = 1L:nrow(dt)
       ncolfinal = ncol(dt)
-    } else {
-      minds = match(rownms, rownames(dt))
-      #rownms = intersect(rownms, rownames(dt))
-      if (all(minds == 0)) stop(sprintf("Argument %s has no matching row names", (if (hasargnms) sprintf("%s (%d)", names(argls)[i], i) else as.character(i) ) ))
+    }
+    else
+    {
+      minds = match(rownames(dtmatchcols), rownms, nomatch = NA_integer_)
+      allmismatch = all(is.na(minds))
+      if (allmismatch)
+      {
+        tol = min(c(nrow(dt), max(c(nrow(dt) / 2, nrow(dtmatchcols) / 10 ))))  # Merge tolerance
+        for (platcol in colnames(dtmatchcols))
+        {
+          minds = match(dtmatchcols[, platcol], rownms, nomatch = NA_integer_)
+          allmismatch = sum(!is.na(minds)) < tol
+          if (!allmismatch)
+            break
+        }
+      }
+      if (allmismatch)
+      {
+        if (length(argls) == 2L && ncol(dtls[[1]]) == 0L) # If the first argument has no value columns, omits it
+          return(ceset)
+        stop(sprintf("Argument %s has no matching row names.\nThe first row names are: %s", (if (hasargnms) sprintf("%s (%d)", names(argls)[i], i) else as.character(i) ), paste0(head(rownames(dt)), collapse=', ')))
+      }
       matinds[,i] = minds
       ncolfinal = ncolfinal + ncol(dt)
     }
@@ -159,7 +241,6 @@ esets.merge <- function(...)
   matinds = matinds[rsel,]
   fmat = matrix(NA_real_, nrow=nrow(matinds), ncol=ncolfinal, dimnames = list(rownames(matinds), character(0)) )
   fdfplat = data.frame(row.names = rownames(matinds))
-  #platmat = data.frame()
   currcol = 1L
   assign('ainds', matinds, envir=globalenv())
   assign('afmat', fmat, envir=globalenv())
@@ -190,8 +271,8 @@ eset.rm.invalid.values <- function(eset, rm.na=T, rm.zero=T, rm.neg=T, rm.inf=T)
 {
   .initialize.esets()
   m = eset
-  iseset = inherits(eset, "ExpressionSet")
-  if (iseset)
+  iseset = inherits(eset, "eSet")
+  if (is.expset(eset))
   {
     m = exprs(eset)
   }
@@ -207,7 +288,7 @@ eset.rm.invalid.values <- function(eset, rm.na=T, rm.zero=T, rm.neg=T, rm.inf=T)
     if (eset.hasplatform(eset))
     {
       platf = eset.getplatform(eset)[!rminds,,drop=F]
-      neweset = eset.insert.platdata(platf)
+      neweset = eset.insert.platdata(neweset, platf)
     }
     return(neweset)
   }
@@ -220,7 +301,7 @@ eset.rm.invalid.values <- function(eset, rm.na=T, rm.zero=T, rm.neg=T, rm.inf=T)
 eset.exprs <- function(eset)
 {
   .initialize.esets()
-  if(inherits(eset, c("ExpressionSet", "AffyBatch"))) return(Biobase::exprs(eset))
+  if(is.expset(eset)) return(Biobase::exprs(eset))
   if(inherits(eset, c("EListRaw", "EList"))) return(eset$E)
   if(inherits(eset, "MAList")) return(Biobase::exprs(malist.to.eset(eset)))
   if(inherits(eset, "RGList")) return(eset$R)
@@ -233,7 +314,7 @@ eset.exprs <- function(eset)
 eset.samplenames <- function(eset)
 {
   .initialize.esets()
-  if(inherits(eset, "ExpressionSet")) return(Biobase::sampleNames(eset))
+  if(inherits(eset, "eSet")) return(Biobase::sampleNames(eset))
   mat = eset.exprs(eset)
   smpnms = colnames(mat)
   smpnms
@@ -255,7 +336,7 @@ eset.hasplatform <- function(eset)
 eset.getplatform <- function(eset)
 {
   .initialize.esets()
-  if(inherits(eset, c("ExpressionSet", "AffyBatch"))) return(fData(eset))
+  if(inherits(eset, 'eSet')) return(fData(eset))
   if(inherits(eset, c("EListRaw", "EList", "RGList", "MAList"))) return(eset$genes)
   plat = df.getcols.bytype(eset, c('character', 'factor', 'multifactor', 'list'))
   plat
