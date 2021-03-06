@@ -50,8 +50,10 @@ diffexpr.compare <- function(seriesData, expGroup, ctrlGroup, ebayesMethod = 'eb
     compMatrix = seriesData
   } else if (inherits(seriesData, 'ExpressionSet'))
   {
-    compMatrix = exprs(seriesData)
+    compMatrix = eset.exprs(seriesData)
   } else {
+    compMatrix = tryCatch(eset.exprs(seriesData), error=function(e) NULL)
+    if (is.null(compMatrix))
     stop("Data must be a matrix, data.frame or ExpressionSet")
   }
   if (is.null(compMatrix) || !is.numeric(compMatrix))

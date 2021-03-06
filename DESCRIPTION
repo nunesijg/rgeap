@@ -1,7 +1,7 @@
 Package: rgeap
 Type: Package
 Title: Gene Expression Analysis Platform (GEAP)
-Version: 0.3.2
+Version: 0.4.0
 Author: Nunes IJG, Feltes BC
 Maintainer: Itamar JG Nunes <nunesijg@gmail.com>
 Description: The current package is used simultaneously along GEAP executable run-time.
@@ -10,6 +10,7 @@ Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.1.1
 LinkingTo: Rcpp
+Depends: R (>= 4.0)
 Collate: 
     'RcppExports.R'
     'vardefs.R'
@@ -44,6 +45,11 @@ Imports:
     Rcpp,
     devtools,
     openssl,
+    NanoStringNorm,
+    data.table,
+    Cairo,
+    png,
+    htmltools,
     Biobase,
     BiocManager,
     affy,
@@ -56,11 +62,7 @@ Imports:
     illuminaio,
     limma,
     beadarray,
-    NanoStringNorm,
     arrayQualityMetrics,
-    data.table,
     topGO,
-    Rgraphviz,
-    Cairo,
-    png
+    Rgraphviz
 Suggests: matrixStats

@@ -134,27 +134,20 @@
     outdf = data.frame(row.names=smpnames)
     outimgfiles = character(0)
     svgMode = !is.windows() || getOption('force.svg', T)
-    ext = if (svgMode) ".svg" else ".wmf"
-    for(i in 1:length(m))
+    for(i in seq_along(m))
     {
       module = m[[i]]
       if (is.null(module)) next
       mname = module@id
-      outimgf = sub('[\\\\/]{2,}', '/', paste0(outdir, '/', mname, ext))
+      outimgf = gr.vector.ext(sprintf("%s/%s", outdir, mname))
       outimgfiles[mname] = outimgf
       h = module@size['h'] * dpi / 75
       w = module@size['w'] * dpi / 75
       suppressWarnings(expr = {
-        if (svgMode)
-        {
-          svg(filename = outimgf, height = h, width = w, family = "sans")
-        } else {
-          win.metafile(filename = outimgf, height = h, width = w, family = "sans")
-        }
+        gr.vector.create(filename=outimgf, height=h, width=w)
+        on.exit({grDevices::graphics.off()})
         aqmenv$makePlot(module)
       })
-      grDevices::graphics.off()
-      #while (!is.null(dev.list())) dev.off()
       modstats = module@outliers@statistic
       if (length(modstats) != 0)
       {

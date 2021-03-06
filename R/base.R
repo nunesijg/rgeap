@@ -214,11 +214,13 @@ loadpkgs <- function(...)
     loadfun = function(pkgname)
     {
       .give.status(message = sprintf("Carregando módulos: %s", pkgname), engMsg = sprintf("Loading modules: %s", pkgname))
+      #requireNamespace(pkgname, quietly = FALSE)
       library(pkgname, verbose = T, character.only = T, logical.return = T)
     }
   } else {
     loadfun = function(pkgname)
     {
+      #requireNamespace(pkgname, quietly = TRUE)
       library(pkgname, verbose = F, character.only = T, logical.return = T)
     }
   }
@@ -256,7 +258,7 @@ all.packages <- function()
 
 loaded.packages <- function()
 {
-  return(c(sub("^package:", "", search())))
+  return(unique(c(sub("^package:", "", search()), loadedNamespaces())))
 }
 
 # Checks if all the following packages are installed

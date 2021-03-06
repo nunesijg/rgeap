@@ -223,7 +223,7 @@ read.multisoft.table.binpos <- function(filename)
   offsets$tablebindex = rep(NA_real_, nrow(offsets))
   offsets$linecount = rep(NA_integer_, nrow(offsets))
   
-  for (i in 1:nrow(offsets))
+  for (i in seq_len(nrow(offsets)))
   {
     hindex = offsets[i, 'hindex']
     maxbin = offsets[i, 'size']
@@ -250,9 +250,10 @@ table.summarize.rownames.bycol <- function(dt, idcol, duprefcols=NULL, dupsep=' 
 {
   if (is.character(idcol))
   {
-    if (!(idcol %in% colnames(dt))) stop(sprintf("Missing ID column: %s", idcol))
-    idcol = which(idcol == colnames(dt))[1]
+    if (!any(idcol %in% colnames(dt))) stop(sprintf("Missing ID column: %s", idcol))
+    idcol = match(idcol, colnames(dt))
   }
+  idcol = idcol[[1]]
   vcolid = dt[, idcol]
   if (anyNA(vcolid))
   {

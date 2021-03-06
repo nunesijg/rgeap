@@ -68,7 +68,7 @@ setMethod('initialize', 'serialelem.list',
               {
                 tmpls$row.names = new('serialelem.atomic', rownames(value))
               }
-              cols = if(is.null(colnames(value))) (1L:ncol(value)) else colnames(value)
+              cols = if(is.null(colnames(value))) (seq_len(value)) else colnames(value)
               for (nm in cols)
               {
                 valcol = value[, nm]
@@ -227,7 +227,7 @@ setMethod('as.character', 'serialelem.list',
             if (length(x@value) != 0)
             {
               lsnames = names(x@value)
-              for (i in 1:length(x@value))
+              for (i in seq_along(x@value))
               {
                 retval[(length(retval) + 1)] = as.character(x@value[[i]], name=lsnames[i] )
               }
@@ -238,20 +238,15 @@ setMethod('as.character', 'serialelem.list',
           })
 
 setMethod('as.character', 'serialelem.atomic',
-          function(x, ...)
+          function(x, name="x", ...)
           {
-            args = list(...)
-            nm = 'x'
-            if ('name' %in% names(args))
+            if (nchar(name) == 0)
             {
-              nm = args[['name']]
+              name = 'x'
             }
-            if (nchar(nm) == 0 || any(grepl("[^\\w\\.]", nm, perl = T)))
-            {
-              nm = 'x'
-            }
+            name = htmltools::htmlEscape(name, attribute = TRUE)
             retval = sprintf("<elem name='%s' type='%s' count='%d' ptr='%.0f' binsize='%.0f' />",
-                             nm,
+                             name,
                              x@type,
                              x@count,
                              .get.mem.address(x@value),
@@ -266,7 +261,7 @@ setMethod('$<-', c(x='serialelem.list', value='serializable_t'),
           function(x, name, value) 
           {
             if (nchar(name) == 0) stop("Element name must be a non-empty character")
-            x@value[[name]] = xserialize(value, F)
+            x@value[[name]] = xserialize(value, FALSE)
             x@count = length(x@value)
             x
           })

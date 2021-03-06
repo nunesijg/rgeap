@@ -205,28 +205,40 @@ read.table.atpos <- function(filename, bytepos=0, nrows=-1)
   dt
 }
 
-# [[geapexport void WriteMatrix(path fileName, call obj)]]
+# [[geapexport void WriteMatrix(path fileName, call obj, dots optArgs)]]
 # Saves a matrix or data.frame to a text file
 #' @export
-write.matrix <- function(filename, obj)
+write.matrix <- function(filename, obj, ...)
 {
   m = obj
-  if (inherits(obj, c("ExpressionSet", "AffyBatch")))
+  if (!is.matrix(m) && !is.data.frame(m))
+    m = eset.exprs(m)
+  lsargs = list(..., format='txt', formatfn=utils::write.table, x=m, file=filename, quote=FALSE, sep='\t', row.names=TRUE, col.names=TRUE)
+  m = lsargs$x
+  if (identical(lsargs$row.names, TRUE) && identical(lsargs$col.names, TRUE) &&
+      length(rownames(m)) != 0L && length(colnames(m)) != 0L)
   {
-    m = exprs(obj)
-  } else if (inherits(obj, "EList"))
-  {
-    m = obj$E
-  }
-  incrownms = !is.null(rownames(m)) && !('row.names' %in% colnames(m)) && !(all.equal(rownames(m), as.character(1:nrow(m))) == T)
-  (con = .write.filecon(filename, 'at')) %using% {
-    colnms = colnames(m)
-    if (incrownms)
+    if (identical(rownames(m), m[,1L,drop=TRUE]))
+      lsargs$row.names = FALSE
+    else if (!(toupper(colnames(m)[1]) %in% c("ID", "ID_REF", "SPOT_ID")))
     {
-      colnms = c('row.names', colnms)
+      m = data.frame(ID=rownames(m), m, check.names = FALSE)
+      lsargs$x = m
+      lsargs$row.names = FALSE
     }
-    writeLines(paste0(colnms, collapse = '\t'), con = con)
-    write.table(m, file = con, quote = F, sep='\t', row.names = incrownms, col.names = F)
   }
+  writefn = switch(lsargs$format,
+                   txt = utils::write.table,
+                   csv = utils::write.csv,
+                   get(lsargs$formatfn)
+                   )
+  writeargnms = switch(lsargs$format,
+                       csv = setdiff(formalArgs(write.table),
+                                     c("append", "col.names", "sep",
+                                       "dec", "qmethod")),
+                       txt = formalArgs(write.table),
+                       formatArgs(writefn))
+  lsargs = lsargs[intersect(writeargnms, names(lsargs))]
+  suppressWarnings(do.call(writefn, lsargs))
   invisible(0)
 }

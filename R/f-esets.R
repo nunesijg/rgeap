@@ -14,6 +14,23 @@
   .self.oneshot()
 }
 
+# Checks if the object is a ExpressionSet or an eSet that implements the exprs method
+is.expset <- function(eset)
+{
+  if (inherits(eset, "ExpressionSet")) return(TRUE)
+  .initialize.esets()
+  if (inherits(eset, 'eSet') && hasMethod(exprs, class(eset)))
+    return(TRUE)
+  FALSE
+}
+
+# Gets the columns of data.frame whose values inherit the type names
+df.getcols.bytype <- function(df, types)
+{
+  colsel = sapply(df, inherits, what=types)
+  return(df[,colsel, drop=F])
+}
+
 # Insert the platform feature data to a ExpressionSet
 # [[geapexport assign ESetInsertPlatformData(call eset, call platDataFrame)]]
 #' @export
@@ -22,7 +39,7 @@ eset.insert.platdata <- function(eset, platdf)
   .initialize.esets()
   if (ncol(platdf) == 0) return(eset)
   platrnms = rownames(platdf)
-  dt = exprs(eset)
+  dt = eset.exprs(eset)
   match.count = function(a, b) sum(!is.na(base::match(a, b)))
   rnms = rownames(dt)
   matchinds = integer(0)
@@ -31,8 +48,8 @@ eset.insert.platdata <- function(eset, platdf)
     platrnms = platdf[,1]
     if (ncol(platdf) > 1 && match.count(rnms, platrnms) != length(rnms))
     {
-      mcols = sapply(colnames(platdf), function(j) match.count(rnms, platdf[,j]))
-      if (all(mcols) == 0) return(eset)
+      mcols = vapply(colnames(platdf), function(j) match.count(rnms, platdf[,j]), 0L)
+      if (all(mcols) == 0L) return(eset)
       bestcol = names(mcols[max.index(mcols)])
       platrnms = platdf[,bestcol]
     }
@@ -55,8 +72,8 @@ eset.merge.platdata <- function(eset, platdf, colid=NA_character_)
   .initialize.esets()
   if (inherits(platdf, "AnnotatedDataFrame")) platdf = Biobase::pData(platdf)
   else if (is.matrix(platdf)) platdf = as.data.frame(platdf)
-  if (ncol(platdf))
-  if (!is.na(colid))
+  if (ncol(platdf) == 0L) return(eset)
+  if (!is.na(colid) && nchar(colid) != 0L)
   {
     if (is.numeric(colid)) colid = colnames(platdf)[colid]
     if (is.character(colid) && colid %in% colnames(platdf))
@@ -69,22 +86,27 @@ eset.merge.platdata <- function(eset, platdf, colid=NA_character_)
   eset2
 }
 
-# Checks if the object is a ExpressionSet or an eSet that implements the exprs method
-is.expset <- function(eset)
+
+# Gets the data.frame from the ExpressionSet. Optionally, appends the platform
+# [[geapexport assign ESetToDataFrame(call eset, call objPlatf="NULL")]]
+#' @export
+eset.as.df <- function(eset, dtplatf=NULL)
 {
-  if (inherits(eset, "ExpressionSet")) return(TRUE)
   .initialize.esets()
-  if (inherits(eset, 'eSet') && hasMethod(exprs, class(eset)))
-    return(TRUE)
-  FALSE
+  meset = eset.exprs(eset)
+  if (length(dtplatf) == 0L)
+  {
+    dt = as.data.frame(meset, optional = TRUE)
+  }
+  else
+  {
+    mplatf = eset.extract.matching.platcols(eset, dtplatf, colnames(dtplatf))
+    dt = data.frame(meset, mplatf, check.names=FALSE)
+  }
+  dt
 }
 
-# Gets the columns of data.frame whose values inherit the type names
-df.getcols.bytype <- function(df, types)
-{
-  colsel = sapply(df, inherits, what=types)
-  return(df[,colsel, drop=F])
-}
+
 
 # Converts a matrix or data.frame to ExpressionSet (exprs slot for numeric and featureData for character) 
 # [[geapexport assign DataFrame2ESet(call dfOrMat)]]
@@ -177,7 +199,7 @@ esets.merge <- function(...)
   hasargnms = !is.null(names(argls))
   ncolfinal = 0
   dtplat = NULL
-  for (i in 1L:length(argls))
+  for (i in seq_along(argls))
   {
     ci = as.character(i)
     dt = argls[[i]]
@@ -208,7 +230,7 @@ esets.merge <- function(...)
         }
       }
       matinds = matrix(0L, nrow=nrow(dt), ncol=length(argls), dimnames = list(rownms, character(0)) )
-      matinds[,1] = 1L:nrow(dt)
+      matinds[,1] = seq_len(nrow(dt))
       ncolfinal = ncol(dt)
     }
     else
@@ -305,6 +327,8 @@ eset.exprs <- function(eset)
   if(inherits(eset, c("EListRaw", "EList"))) return(eset$E)
   if(inherits(eset, "MAList")) return(Biobase::exprs(malist.to.eset(eset)))
   if(inherits(eset, "RGList")) return(eset$R)
+  if (inherits(eset, "data.frame"))
+    return(as.matrix(eset[,column.classes(eset) %in% c("numeric", "integer") ,drop=FALSE] ))
   eset
 }
 
@@ -320,6 +344,16 @@ eset.samplenames <- function(eset)
   smpnms
 }
 
+# Checks if a ExpressionSet has non-empty matrix values
+# [[geapexport bool ESetHasExprsValues(call eset)]]
+#' @export
+eset.has.exprs.vals <- function(eset)
+{
+  .initialize.esets()
+  hasvals = !identical(length(eset.exprs(eset)), 0L)
+  hasvals
+}
+
 # Checks if a ExpressionSet has platform information
 # [[geapexport bool ESetHasPlatform(call eset)]]
 #' @export
@@ -329,6 +363,7 @@ eset.hasplatform <- function(eset)
   hasplat = ncol(featureData(eset)) != 0
   hasplat
 }
+
 
 # Gets the platform data.frame from a ExpressionSet, EList, MAList or data.frame
 # [[geapexport assign GetPlatformData(call eset)]]
@@ -342,3 +377,34 @@ eset.getplatform <- function(eset)
   plat
 }
 
+# Extracts certain columns from the platform that matches the ExpressionSet or DifExpResults
+# [[geapexport robj_RDataFrame ESetExtractMatchingPlatformCols(call eset, call dtplatform, string[] platfcols)]]
+#' @export
+eset.extract.matching.platcols <- function(eset, dtplatf, cols)
+{
+  if (length(cols) == 0L)
+    return(data.frame(row.names = rownames(eset)))
+  dtplatf = dtplatf[,cols,drop=FALSE]
+  if (!is.data.frame(dtplatf))
+    dtplatf = as.data.frame(dtplatf, optional = TRUE)
+  if (identical(rownames(eset), rownames(dtplatf)))
+    return(dtplatf)
+  ind.matches = match(rownames(eset), rownames(dtplatf))
+  if (all(is.na(ind.matches)))
+  {
+    return(do.call(data.frame, lapply(setNames(cols, cols), function(cl) rep("", nrow(eset)))) )
+  }
+  dtplatf = dtplatf[ind.matches,,drop=FALSE]
+  if (anyNA(ind.matches))
+  {
+    sel.nas = which(is.na(ind.matches))
+    for(col in cols)
+    {
+      vcol = dtplatf[,col]
+      if (is.character(vcol))
+        vcol[sel.nas] = ""
+      dtplatf[,col] = vcol
+    }
+  }
+  dtplatf
+}

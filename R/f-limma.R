@@ -16,6 +16,26 @@
   .self.oneshot()
 }
 
+# Creates a new EListRaw object
+# [[geapexport assign CreateEListRaw(dots args)]]
+#' @export
+create.elistraw <- function(...)
+{
+  .initialize.limma()
+  rgls = new("EListRaw", list(...))
+  rgls
+}
+
+# Creates a new RGList object
+# [[geapexport assign CreateRGList(dots args)]]
+#' @export
+create.rglist <- function(...)
+{
+  .initialize.limma()
+  rgls = new("RGList", list(...))
+  rgls
+}
+
 # Treats array data (background and normalization), returns an ExpressionSet
 # [[geapexec assign TreatLimma(call ergObjName, string bgMethod = "auto", string bgNormExpMethod = "saddle", double bgOffset=0, string normMethod = "quantile", string normCyclicMethod = "fast" )]]
 #' @export
@@ -25,7 +45,7 @@ treat.limma <- function(ergls, bg.method = 'auto', bg.normexp.method = 'saddle',
   wasmat = F
   if (inherits(ergls, 'ExpressionSet'))
   {
-    ergls = exprs(ergls)
+    ergls = eset.exprs(ergls)
     wasmat = T
   }
   ergclass = class(ergls)[1]
@@ -41,10 +61,21 @@ treat.limma <- function(ergls, bg.method = 'auto', bg.normexp.method = 'saddle',
   if (ergclass == 'RGList') normoptions = c(normoptions, 'Aquantile', 'Gquantile', 'Rquantile', 'Tquantile') # TODO: Tquantile requer definição dos 'targets'
   norm.method = match.arg(norm.method[1], normoptions)
   norm.cyclic.method = match.arg(norm.cyclic.method[1], c('fast', 'affy', 'pairs'))
-  
-  .give.status(message = sprintf("Aplicando correção de fundo no objeto %s...", ergclass), engMsg = sprintf("Applying background correction on %s values...", ergclass))
-  lsres = limma::backgroundCorrect(ergls, method = bg.method, normexp.method = bg.normexp.method, offset = bg.offset, verbose = F)
-  
+  if (bg.method != 'none')
+  {
+    .give.status(message = sprintf("Aplicando correção de fundo no objeto %s...", ergclass), engMsg = sprintf("Applying background correction on %s values...", ergclass))
+    lsres = limma::backgroundCorrect(ergls, method = bg.method, normexp.method = bg.normexp.method, offset = bg.offset, verbose = F)
+  }
+  else
+  {
+    minval = min(ergls$E) # Workaround to avoid negative values
+    if (minval <= 0)
+    {
+      warning(sprintf("Negative values found.\nAll values were offset by %.2f", (-minval + 1e-10)))
+      ergls$E = ergls$E + (-minval + 1e-10)
+    }
+    lsres = ergls
+  }
   .give.status(message = sprintf("Normalizando valores do objeto %s...", ergclass), engMsg = sprintf("Normalizing %s values...", ergclass))
   lsres = switch(norm.method,
                  vsn = limma::normalizeVSN(lsres),

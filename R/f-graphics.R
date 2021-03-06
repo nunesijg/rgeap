@@ -27,3 +27,25 @@ gr.plot.raw.png <- function(expr)
   p = writePNG(r, raw())
   p
 }
+
+# Gets the extension used in vector images
+gr.vector.ext <- function(fnames=character(0L))
+{
+  svgMode = !is.windows() || getOption('force.svg', T)
+  ext = if (svgMode) ".svg" else ".wmf"
+  if (length(fnames) == 0L) return(ext)
+  sub('[\\\\/]{2,}', '/', paste0(fnames, ext))
+}
+
+# Creates a vector image using the current configuration (either SVG or WMF)
+gr.vector.create <- function(filename, width = 7, height = 7, pointsize=12, family="sans")
+{
+  svgMode = !endsWith(tolower(filename), ".wmf") &&
+    (endsWith(tolower(filename), ".svg") || !is.windows() || getOption('force.svg', TRUE))
+  if (svgMode)
+  {
+    svg(filename = filename, height = height, width = width, pointsize=pointsize, family = family)
+  } else {
+    win.metafile(filename = filename, height = height, width = width, pointsize=pointsize, family = family)
+  }
+}
