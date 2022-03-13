@@ -317,6 +317,29 @@ eset.rm.invalid.values <- function(eset, rm.na=T, rm.zero=T, rm.neg=T, rm.inf=T)
   m
 }
 
+# Checks if an ExpressionSet is (probably) log2-transformed
+# [[geapexport bool ESetMaybeLog2Transformed(call eset, int lowerThreshold=50)]]
+#' @export
+eset.maybelog2transformed <- function(eset, lower.threshold=50)
+{
+  if (is.null(eset))
+    return(FALSE)
+  mat = as.matrix(eset.exprs(eset))
+  if (length(mat) == 0L)
+    return(FALSE)
+  
+  for (i in seq_len(ncol(mat)))
+  {
+    vcol = mat[,i]
+    if (any(na.rm=TRUE, vcol <= 0))
+      return(TRUE)
+    if (any(na.rm=TRUE, vcol > lower.threshold))
+      return(FALSE)
+  }
+  TRUE
+}
+
+
 # Gets the intensity values matrix from ExpressionSet, AffyBatch, EListRaw, EList, etc
 # [[geapexport assign SetExprsMatrix(call eset)]]
 #' @export
