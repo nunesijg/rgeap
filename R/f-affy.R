@@ -129,13 +129,13 @@ read.affy.cel.files <- function(samplefiles)
   return(affyRaw)
 }
 
-# [[geapexec assign OligoReadCelFiles(path[] fileNames)]]
+# [[geapexec assign OligoReadCelFiles(path[] fileNames, dots optArgs)]]
 #' @export
 read.oligo.cel.files <- function(samplefiles, ...) 
 {
   .initialize.oligo()
   smpnms = sub(pattern = ".CEL$", replacement = '', x = basename(samplefiles), ignore.case = T)
-  affyRaw = oligo::read.celfiles(samplefiles, sampleNames = smpnms, ...)
+  affyRaw = oligo::read.celfiles(samplefiles, sampleNames = smpnms, verbose = FALSE, ...)
   return(affyRaw)
 }
 

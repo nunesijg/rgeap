@@ -32,9 +32,11 @@ install.pkgs <- function(pkglist)
   {
     instdir = .libPaths()[1]
     pkglocalname = pkgnm
+    repos = getOption("repos")
     if (grepl("[\\\\/]", pkgnm) && file.exists(pkgnm))
     {
-      pkglocalname = sub("^([^_]+?)_?(?:\\d+?\\.)+?tar\\.gz", '\\1', basename(pkgnm), perl=T)
+      pkglocalname = gsub("^([^_]+?)_?(?:\\d+?\\.)+?tar\\.gz", '\\1', basename(pkgnm), perl=TRUE)
+      repos = NULL
     } else if (pkgnm %in% names(pkgpaths))
     {
       instdir = pkgpaths[[pkgnm]]
@@ -42,13 +44,13 @@ install.pkgs <- function(pkglist)
     .give.status(percent=as.integer(100 * i / tot),
                  message=sprintf("Instalando pacote: %s", pkglocalname),
                  engMsg=sprintf("Installing package: %s", pkglocalname))
-    utils::install.packages(pkgnm, quiet = T, verbose = F, lib = instdir, type='both')
+    utils::install.packages(pkgnm, repos=repos, quiet = TRUE, verbose = FALSE, lib = instdir, type='both')
     if (!(pkglocalname %in% getAllInstalledPackages()))
     {
       .give.status(percent=as.integer(100 * i / tot),
                    message=sprintf("Instalando pacote (2ª tentativa): %s", pkglocalname),
                    engMsg=sprintf("Installing package (2nd attempt): %s", pkglocalname))
-      utils::install.packages(pkglocalname, quiet = T, verbose = F, lib = instdir, type='both')
+      utils::install.packages(pkglocalname, repos=repos, quiet = TRUE, verbose = FALSE, lib = instdir, type='both')
     }
     i = i + 1
   }
@@ -81,7 +83,7 @@ get.biocmanager.version <- function()
 #' @export
 getAllInstalledPackages <- function()
 {
-  pkgs = names(utils::installed.packages(fields = 'Package')[,'Package'])
+  pkgs = names(utils::installed.packages(fields = 'Package', noCache = TRUE)[,'Package'])
   pkgs
 }
 
@@ -95,6 +97,30 @@ getLoadedPackages <- function(includeBase=FALSE)
   else
     pkgs = names(sessionInfo()$otherPkgs)
   pkgs
+}
+
+# [[geapexport int UnloadLocalLoadedPackages()]]
+# Unloads only the locally loaded packages (e.g., by devtools). Returns the number of detached packages
+#' @export
+unloadLocalLoadedPackages <- function()
+{
+  nsnames = names(sessionInfo()$otherPkgs)
+  localpkgs = nsnames[vapply(nsnames,
+                             function(ns) '.__DEVTOOLS__' %in% names(getNamespace(ns)), FALSE, USE.NAMES = TRUE)]
+  localpkgs = setdiff(localpkgs, packageName())
+  nUnloaded = 0L
+  for (pkgnm in localpkgs)
+  {
+    pkgns = sprintf('package:%s', pkgnm)
+    success = FALSE
+    tryCatch({
+      detach(pkgns, unload = TRUE, character.only = TRUE, force = TRUE)
+      success = TRUE
+    }, error=function(e) warning(e))
+    if (success)
+      nUnloaded = nUnloaded + 1L
+  }
+  nUnloaded
 }
 
 # [[geapexport int UnloadAllLoadedPackages()]]
